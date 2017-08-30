@@ -12,29 +12,34 @@ contract ZiomiPresale is Ownable, SafeMath {
   bool public presaleClosed;        // whether the crowdsale has been closed
   mapping (address => uint256) public etherBalances;
 
-  uint256 public etherReceived;       // total ether received
-  uint256 public constant DISCOUNT = 50; //percent
+  uint public etherReceived;       // total ether received
+  uint public constant DISCOUNT = 50; //percent
 
   // number of tokens sold during presale
-  uint256 public constant PRESALE_TOKEN_AMOUNT = 60000000;
+  uint public constant PRESALE_TOKEN_AMOUNT = 60000000;
 
   // smallest possible donation
-  uint256 public constant MINIMUM_BUY = 1000; //usd purchase limit
-  uint256 public constant USD_RATE = 200; //usd per 1 eth
-  uint256 startTime;
-  uint256 endTime;
+  uint public constant MINIMUM_BUY = 1000; //usd purchase limit
+  uint public constant USD_RATE = 200; //usd per 1 eth
+  uint startTime;
+
+  uint endTime;
 
 
-  event Buy(address indexed donor, uint256 amount, uint256 tokenAmount);
+  event Buy(address indexed donor, uint amount, uint tokenAmount);
+
+  event LogUint(uint value);
+
+  event LogBool(bool value);
 
   modifier onlyDuringSale() {
     require(!presaleClosed);
-    require(now>=startTime);
-    require(now<=endTime);
+    require(now >= startTime);
+    require(now <= endTime);
     _;
   }
 
-  function ZiomiPresale(address ziomiTokenAddress,uint _startTime, uint _endTime) {
+  function ZiomiPresale(address ziomiTokenAddress, uint _startTime, uint _endTime) {
     require(_endTime > _startTime);
     presaleClosed = false;
     ziomiToken = ZiomiToken(ziomiTokenAddress);
@@ -42,28 +47,32 @@ contract ZiomiPresale is Ownable, SafeMath {
     endTime = _endTime;
   }
 
-  function getTokenAmount(uint256 amount) constant returns (uint256) {
+  function getTokenAmount(uint amount) constant returns (uint) {
     if (amount == 0) return 0;
-    uint256 tokenAmount = safeMul(amount, ziomiToken.getTokenRate());
+    uint tokenAmount = safeDiv(amount, ziomiToken.getTokenRate());
     return safeMul(tokenAmount, safeDiv(100, DISCOUNT));
   }
 
   modifier minimumBuy(){
-    require(safeMul(msg.value, USD_RATE) <= MINIMUM_BUY);
+    require(safeDiv(safeMul(msg.value, USD_RATE), 1 ether) >= MINIMUM_BUY);
     _;
   }
 
-  function checkPresaleTokenAmount(uint256 tokenAmount) internal returns (bool) {
+  function checkPresaleTokenAmount(uint tokenAmount) constant returns (bool) {
     return safeAdd(tokenAmount, ziomiToken.getTotalSupply()) <= PRESALE_TOKEN_AMOUNT;
   }
+
   /// @dev buy tokens, only usable while crowdsale is active
   function processBuy() minimumBuy internal returns (bool) {
-    uint256 amount = msg.value;
-    uint256 tokenAmount = getTokenAmount(amount);
+    uint amount = msg.value;
+    uint tokenAmount = getTokenAmount(amount);
+
     require(checkPresaleTokenAmount(tokenAmount));
     require(ziomiToken.create(msg.sender, tokenAmount));
+
     etherBalances[msg.sender] += amount;
     etherReceived = safeAdd(etherReceived, amount);
+
     Buy(msg.sender, amount, tokenAmount);
     return true;
   }
@@ -73,7 +82,11 @@ contract ZiomiPresale is Ownable, SafeMath {
     require(processBuy());
   }
 
-  event Finalize(uint256 totalFinalizeSupply, uint256 etherFinalizeReceived);
+  function balanceOf(address _owner) constant returns (uint balance) {
+    return etherBalances[_owner];
+  }
+
+  event Finalize(uint totalFinalizeSupply, uint etherFinalizeReceived);
   /// @dev close the crowdsale and unlock the tokens
   function finalize() onlyOwner {
     require(!presaleClosed);

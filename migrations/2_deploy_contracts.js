@@ -6,6 +6,9 @@ module.exports = (deployer, network, accounts) => {
     const startTime = new Date('29 Aug 2017 GMT+0') / 1000;
     const endTime = new Date('10 Sep 2017 GMT+0') / 1000;
 
-    return deployer.deploy(ZiomiPresale, ZiomiToken.address, startTime, endTime);
+    return deployer.deploy(ZiomiPresale, ZiomiToken.address, startTime, endTime)
+      .then(() => ZiomiToken.deployed())
+      .then(instance => instance.setCreatorAddress(ZiomiPresale.address))
+      .catch((error) => console.error(error));
   });
 };

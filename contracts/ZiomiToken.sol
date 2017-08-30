@@ -20,6 +20,20 @@ contract ZiomiToken is StandardToken, Ownable {
 
   // whether transfers are locked
   bool public locked = true;
+
+  address public creator;
+
+  modifier onlyCreatorOrOwner() {
+    require(msg.sender == creator || msg.sender == owner);
+    _;
+  }
+
+  function setCreatorAddress(address newCreator) onlyOwner {
+    if (newCreator != address(0)) {
+      creator = newCreator;
+    }
+  }
+
   // determine whether transfers can be made
   modifier onlyAfterSale() {
     require(!locked);
@@ -41,7 +55,7 @@ contract ZiomiToken is StandardToken, Ownable {
   }
 
   function getTokenRate() constant returns (uint){
-    return TOKEN_RATE;
+    return 1 ether / TOKEN_RATE;
   }
 
   event Unlock(uint time);
@@ -63,7 +77,7 @@ contract ZiomiToken is StandardToken, Ownable {
   /// @param recipient address that will receive the created tokens
   /// @param amount the number of tokens to create
   /// @return true if successful
-  function create(address recipient, uint256 amount) onlyOwner onlyDuringSale returns (bool) {
+  function create(address recipient, uint amount) onlyCreatorOrOwner onlyDuringSale returns (bool) {
     require(amount > 0);
     require((totalSupply + amount) < MAX_TOKENS);
     balances[recipient] = safeAdd(balances[recipient], amount);

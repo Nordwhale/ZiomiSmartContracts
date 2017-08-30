@@ -8,9 +8,10 @@
   },
   "scripts": {
     "test": "./node_modules/.bin/truffle test",
-    "build": "./node_modules/.bin/truffle compile",
-    "deploy": "./node_modules/.bin/truffle migrate",
-    "start": "./node_modules/.bin/testrpc --account=\"0x0cfd9cd9e0d459c629d6c67b6476e17c781770af5ad2cc42171986a59d1b81ef,10000000000000000000\" --network-id=ziomy"
+    "compile": "./node_modules/.bin/truffle compile",
+    "migrate": "./node_modules/.bin/truffle migrate",
+    "build": "npm run test && npm run compile && npm run migrate",
+    "start": "./node_modules/.bin/testrpc --account=\"0x0cfd9cd9e0d459c629d6c67b6476e17c781770af5ad2cc42171986a59d1b81ef,10000000000000000000\""
   },
   "author": "",
   "license": "ISC",
